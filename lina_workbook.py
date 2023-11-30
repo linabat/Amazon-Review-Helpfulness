@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[3]:
+# In[1]:
 
 
 from IPython.display import display, HTML
 display(HTML("<style>.container { width:95% !important; }</style>"))
 
 
-# In[4]:
+# In[2]:
 
 
 import gzip
@@ -43,7 +43,7 @@ from sklearn.preprocessing import LabelEncoder
 import pandas as pd
 
 
-# In[5]:
+# In[3]:
 
 
 f = gzip.open("/Users/linabattikha/cse158/assignment2/data/reviews_Electronics_5.json.gz")
@@ -52,25 +52,19 @@ for l in f:
     data.append(json.loads(l))
 
 
-# In[6]:
-
-
-len(data)
-
-
-# In[7]:
+# In[5]:
 
 
 raw_df = pd.DataFrame(data)
 
 
-# In[8]:
+# In[6]:
 
 
 raw_df["helpful"].value_counts()
 
 
-# In[9]:
+# In[7]:
 
 
 # to get percentage
@@ -82,7 +76,7 @@ def get_perc(lst):
 
 
 
-# In[10]:
+# In[8]:
 
 
 # retrieve vote information 
@@ -92,7 +86,7 @@ raw_df["negative_votes"] = raw_df["helpful"].apply(lambda x: x[1] - x[0])
 raw_df["total_votes"] = raw_df["helpful"].apply(lambda x:x[1])
 
 
-# In[11]:
+# In[9]:
 
 
 raw_df.shape
@@ -110,25 +104,25 @@ raw_df.shape
 
 
 
-# In[12]:
+# In[10]:
 
 
 # will only consider all the reviews that have been voted on 
 raw_df = raw_df[raw_df["total_votes"] != 0]
 
 # keep only 50 percent of what is left 
-sample_size = int(0.5 * raw_df.shape[0])
+# sample_size = int(0.75 * raw_df.shape[0])
 
-raw_df = raw_df.sample(n=sample_size, random_state=42)
+# raw_df = raw_df.sample(n=sample_size, random_state=42)
 
 
-# In[13]:
+# In[11]:
 
 
 raw_df.shape[0]
 
 
-# In[14]:
+# In[12]:
 
 
 # average of total votes 
@@ -143,87 +137,87 @@ negative_votes_mean = raw_df["negative_votes"].mean()
 print("total", total_votes_mean, "postive", positive_votes_mean, "negative", negative_votes_mean)
 
 
-# In[15]:
+# In[13]:
 
 
 raw_df.head()
 
 
-# In[16]:
+# In[14]:
 
 
 asin_focus = raw_df.groupby("asin")[["positive_votes", "negative_votes", "total_votes"]].mean().reset_index()
 
 
-# In[17]:
+# In[ ]:
 
 
 # px.histogram(asin_focus, x="asin", y="positive_votes")
 
 
-# In[18]:
+# In[ ]:
 
 
 # px.histogram(asin_focus, x="asin", y="negative_votes")
 
 
-# In[19]:
+# In[15]:
 
 
 raw_df["overall"].value_counts()
 raw_df["overall"] = raw_df["overall"].round(0).astype(str)
 
 
-# In[20]:
+# In[ ]:
 
 
 # px.bar(raw_df, x = "overall", y = "positive_votes")
 
 
-# In[21]:
+# In[16]:
 
 
 overall_pv_df = raw_df.groupby("overall")["positive_votes"].sum().reset_index()
 
 
-# In[22]:
+# In[17]:
 
 
 px.bar(overall_pv_df, x="overall", y="positive_votes")
 
 
-# In[23]:
+# In[18]:
 
 
 overall_nv_df = raw_df.groupby("overall")["negative_votes"].sum().reset_index()
 px.bar(overall_nv_df, x="overall", y="negative_votes")
 
 
-# In[24]:
+# In[19]:
 
 
 px.scatter(raw_df, x="percentage", y="positive_votes")
 
 
-# In[25]:
+# In[ ]:
 
 
 ### work on actual model now 
 
 
-# In[26]:
+# In[ ]:
 
 
 raw_df.shape[0]
 
 
-# In[27]:
+# In[ ]:
 
 
 raw_df.shape
 
 
-# In[28]:
+# In[20]:
 
 
 # data preprocessing
@@ -264,13 +258,13 @@ print("Original DataFrame shape:", raw_df.shape)
 
 
 
-# In[29]:
+# In[21]:
 
 
 target = raw_df["percentage"]
 
 
-# In[31]:
+# In[ ]:
 
 
 # # X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.2, random_state=42)
@@ -289,7 +283,7 @@ mse = mean_squared_error(y_test, y_pred)
 print(f'Mean Squared Error: {mse}')
 
 
-# In[30]:
+# In[ ]:
 
 
 # # Split the data into training and testing sets
@@ -330,7 +324,7 @@ print(f'Mean Squared Error: {mse}')
 # THIS ONE IS WITHOUT TEXT AS A FEATURE 
 
 
-# In[34]:
+# In[ ]:
 
 
 # THIS IS ONLY USING 50% OF THE DATA WITH ACTUAL VOTES
@@ -373,7 +367,7 @@ mse = mean_squared_error(y_test, y_pred)
 print(f'Mean Squared Error: {mse}')
 
 
-# In[38]:
+# In[23]:
 
 
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -390,11 +384,11 @@ import pandas as pd
 raw_df['overall'] = pd.to_numeric(raw_df['overall'], errors='coerce')
 
 # Step 1: Vectorize the Text Data
-tfidf = TfidfVectorizer(max_features=5000)  # Adjust the number of features
+tfidf = TfidfVectorizer(max_features=5000)
 vectorized_text = tfidf.fit_transform(raw_df['reviewText'])
 
 # Step 2: Reduce Dimensionality
-svd = TruncatedSVD(n_components=500)  # Adjust the number of components
+svd = TruncatedSVD(n_components=500)
 reduced_features = svd.fit_transform(vectorized_text)
 
 # Generate string feature names for reduced features
@@ -416,18 +410,24 @@ combined_features.columns = combined_features.columns.astype(str)
 # Ensure all data types are correct
 combined_features = combined_features.apply(pd.to_numeric, errors='coerce')
 
-# Step 4: Split the Data
+# Step 4: Split the Data into train, validation, and test sets
 target = raw_df['percentage']  # Replace 'target_column' with your actual target column name
-X_train, X_test, y_train, y_test = train_test_split(combined_features, target, test_size=0.2, random_state=42)
+X_temp, X_test, y_temp, y_test = train_test_split(combined_features, target, test_size=0.2, random_state=42)
+X_train, X_val, y_train, y_val = train_test_split(X_temp, y_temp, test_size=0.25, random_state=42)  # 0.25 x 0.8 = 0.2
 
 # Step 5: Train the XGBoost Regressor Model
 model = XGBRegressor(objective='reg:squarederror', n_estimators=100, learning_rate=0.1, random_state=42)
 model.fit(X_train, y_train)
-y_pred = model.predict(X_test)
 
-# Evaluate the model
-mse = mean_squared_error(y_test, y_pred)
-print(f'Mean Squared Error: {mse}')
+# Evaluate on the validation set
+y_val_pred = model.predict(X_val)
+val_mse = mean_squared_error(y_val, y_val_pred)
+print(f'Validation Mean Squared Error: {val_mse}')
+
+# Final evaluation on the test set
+y_test_pred = model.predict(X_test)
+test_mse = mean_squared_error(y_test, y_test_pred)
+print(f'Test Mean Squared Error: {test_mse}')
 
 
 # In[ ]:

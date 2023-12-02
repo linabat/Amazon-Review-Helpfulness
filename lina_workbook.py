@@ -58,12 +58,6 @@ for l in f:
 raw_df = pd.DataFrame(data)
 
 
-# In[6]:
-
-
-raw_df["helpful"].value_counts()
-
-
 # In[7]:
 
 
@@ -75,8 +69,7 @@ def get_perc(lst):
         return lst[0]/lst[1]
 
 
-
-# In[8]:
+# In[32]:
 
 
 # retrieve vote information 
@@ -86,40 +79,36 @@ raw_df["negative_votes"] = raw_df["helpful"].apply(lambda x: x[1] - x[0])
 raw_df["total_votes"] = raw_df["helpful"].apply(lambda x:x[1])
 
 
-# In[9]:
+# In[33]:
 
 
 raw_df.shape
 
 
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[10]:
+# In[34]:
 
 
 # will only consider all the reviews that have been voted on 
 raw_df = raw_df[raw_df["total_votes"] != 0]
 
-# keep only 50 percent of what is left 
-# sample_size = int(0.75 * raw_df.shape[0])
 
-# raw_df = raw_df.sample(n=sample_size, random_state=42)
+# In[35]:
 
 
-# In[11]:
+# Convert Unix time to datetime
+raw_df['datetime'] = pd.to_datetime(raw_df['unixReviewTime'], unit='s')
+
+# Extracting date components
+raw_df['year'] = raw_df['datetime'].dt.year
+raw_df['month'] = raw_df['datetime'].dt.month
+raw_df['day'] = raw_df['datetime'].dt.day
+raw_df['weekday'] = raw_df['datetime'].dt.weekday  # Monday=0, Sunday=6
 
 
-raw_df.shape[0]
+# In[28]:
+
+
+raw_df.groupby("asin")["reviewerID"].count().sort_values(ascending = False).value_counts()
 
 
 # In[12]:
@@ -242,20 +231,13 @@ le_asin = LabelEncoder()
 raw_df['reviewerID'] = le_reviewer.fit_transform(raw_df['reviewerID'])
 raw_df['asin'] = le_asin.fit_transform(raw_df['asin'])
 
-# Reset the index of raw_df if it has been manipulated earlier (optional, if needed)
-# raw_df.reset_index(drop=True, inplace=True)
-
 # Combine all features
 features = pd.concat([raw_df[['reviewerID', 'asin', 'overall', 'unixReviewTime']], 
                       vectorized_df], axis=1)  # Concatenate along columns
 
-# features = raw_df[['reviewerID', 'asin', 'overall', 'unixReviewTime']]
-
-
 # Now, 'features' should have the same number of rows as 'raw_df'
 print("Features shape:", features.shape)
 print("Original DataFrame shape:", raw_df.shape)
-
 
 
 # In[21]:
@@ -324,17 +306,39 @@ print(f'Mean Squared Error: {mse}')
 # THIS ONE IS WITHOUT TEXT AS A FEATURE 
 
 
-# In[ ]:
+# In[46]:
 
 
-# THIS IS ONLY USING 50% OF THE DATA WITH ACTUAL VOTES
+raw_df["reviewerID"].value_counts()
+
+
+# In[49]:
+
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import LabelEncoder
+from sklearn.linear_model import LinearRegression
+import pandas as pd
+
+# Assuming raw_df is your DataFrame
+
+# Convert 'datetime' to numerical features
+raw_df['year'] = raw_df['datetime'].dt.year
+raw_df['month'] = raw_df['datetime'].dt.month
+raw_df['day'] = raw_df['datetime'].dt.day
+raw_df['weekday'] = raw_df['datetime'].dt.weekday
+
+# Continue with your existing code...
 
 # Step 1: Vectorize the Text Data
-tfidf = TfidfVectorizer(max_features=5000)  # Adjust the number of features
+tfidf = TfidfVectorizer(max_features=5000)
 vectorized_text = tfidf.fit_transform(raw_df['reviewText'])
 
-# Step 2: Reduce Dimensionality - THIS IS THE LATENT SEMANTIC ANALYSIS 
-svd = TruncatedSVD(n_components=500)  # Adjust the number of components
+# Step 2: Reduce Dimensionality
+svd = TruncatedSVD(n_components=500)
 reduced_features = svd.fit_transform(vectorized_text)
 
 # Generate string feature names for reduced features
@@ -347,27 +351,43 @@ raw_df['reviewerID'] = le_reviewer.fit_transform(raw_df['reviewerID'])
 raw_df['asin'] = le_asin.fit_transform(raw_df['asin'])
 
 # Step 3: Combine Reduced Text Features with Other Features
-other_features = raw_df[['reviewerID', 'asin', 'overall', 'unixReviewTime']]
+other_features = raw_df[['reviewerID', 'asin', 'overall', 'year', 'month']]  # Replace 'datetime' with extracted features
 combined_features = pd.concat([pd.DataFrame(reduced_features, columns=reduced_feature_names), other_features.reset_index(drop=True)], axis=1)
 
 # Ensure all column names are of type string
 combined_features.columns = combined_features.columns.astype(str)
 
 # Step 4: Split the Data
-target = raw_df['percentage']  # Replace 'target_column' with your actual target column name
-X_train, X_test, y_train, y_test = train_test_split(combined_features, target, test_size=0.2, random_state=42)
+target = raw_df['percentage']  # Replace with your actual target column name
+X_temp, X_test, y_temp, y_test = train_test_split(combined_features, target, test_size=0.2, random_state=42)
+X_train, X_val, y_train, y_val = train_test_split(X_temp, y_temp, test_size=0.25, random_state=42)
 
 # Step 5: Train the Linear Regression Model
 model = LinearRegression()
 model.fit(X_train, y_train)
-y_pred = model.predict(X_test)
+y_val_pred = model.predict(X_val)
 
 # Evaluate the model
-mse = mean_squared_error(y_test, y_pred)
-print(f'Mean Squared Error: {mse}')
+val_mse = mean_squared_error(y_val, y_val_pred)
+print(f'Validation Mean Squared Error: {val_mse}')
+
+# Final evaluation on the test set
+y_test_pred = model.predict(X_test)
+test_mse = mean_squared_error(y_test, y_test_pred)
+print(f'Test Mean Squared Error: {test_mse}')
 
 
-# In[23]:
+# In[ ]:
+
+
+# linear regression 
+
+including unixReviewTime
+Validation Mean Squared Error: 0.1078982820100415
+Test Mean Squared Error: 0.10717433729872824
+
+
+# In[56]:
 
 
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -401,7 +421,7 @@ raw_df['reviewerID'] = le_reviewer.fit_transform(raw_df['reviewerID'])
 raw_df['asin'] = le_asin.fit_transform(raw_df['asin'])
 
 # Step 3: Combine Reduced Text Features with Other Features
-other_features = raw_df[['reviewerID', 'asin', 'overall', 'unixReviewTime']]
+other_features = raw_df[['reviewerID', 'asin', 'overall', 'datetime']]
 combined_features = pd.concat([pd.DataFrame(reduced_features, columns=reduced_feature_names), other_features.reset_index(drop=True)], axis=1)
 
 # Ensure all column names are of type string
@@ -416,7 +436,7 @@ X_temp, X_test, y_temp, y_test = train_test_split(combined_features, target, tes
 X_train, X_val, y_train, y_val = train_test_split(X_temp, y_temp, test_size=0.25, random_state=42)  # 0.25 x 0.8 = 0.2
 
 # Step 5: Train the XGBoost Regressor Model
-model = XGBRegressor(objective='reg:squarederror', n_estimators=100, learning_rate=0.1, random_state=42)
+model = XGBRegressor(objective='reg:squarederror', n_estimators=300, learning_rate=0.1, max_depth=7, random_state=42)
 model.fit(X_train, y_train)
 
 # Evaluate on the validation set
@@ -428,6 +448,53 @@ print(f'Validation Mean Squared Error: {val_mse}')
 y_test_pred = model.predict(X_test)
 test_mse = mean_squared_error(y_test, y_test_pred)
 print(f'Test Mean Squared Error: {test_mse}')
+
+
+# In[ ]:
+
+
+# XGBRegressor
+# 0.01 with 100 was around 0.11
+
+n_estimators: 150, learning rate: 0.1, included unixTime
+Validation Mean Squared Error: 0.10678114082258353
+Test Mean Squared Error: 0.10639875138479503
+
+
+n_estimators: 150, learning rate: 0.1, included datetime
+Validation Mean Squared Error: 0.1065981004027286
+Test Mean Squared Error: 0.10623299283122345
+    
+n_estimator: 100, learning rate: 0.1, included datetime
+Validation Mean Squared Error: 0.10700001403649959
+Test Mean Squared Error: 0.10670623701065131
+    
+n_estimator: 300, learning rate: 0.3, included datetime
+Validation Mean Squared Error: 0.11137659965017736
+Test Mean Squared Error: 0.11117464390667328
+
+n_estimator: 300, learning rate: 0.1, included datetime
+Validation Mean Squared Error: 0.10657464826527628
+Test Mean Squared Error: 0.10618715639932949
+    
+n_estimatr: 500, learning rate: 0.1, including datetime 
+Validation Mean Squared Error: 0.10669503715947311
+Test Mean Squared Error: 0.10649647912724372
+
+n_estimatr: 300, learning rate: 0.1, max_depth = 5, including datetime 
+Validation Mean Squared Error: 0.10647872527782656
+Test Mean Squared Error: 0.10607541596432436
+    
+    
+n_estimators=300, learning_rate=0.1, max_depth=7 including datetime 
+Validation Mean Squared Error: 0.10684418000082262
+Test Mean Squared Error: 0.1064496386996795
+
+
+# In[55]:
+
+
+
 
 
 # In[ ]:

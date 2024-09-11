@@ -1,0 +1,26 @@
+{
+  "218011712": 
+    [(5, "Bonus. Clearly described the data set and completed a very thorough exploratory data analysis of the data that was used. Figures that were used were relevant!"),
+     (5, "Clearly described that their predictive task of the data that they used, which was predicting the rating the user gives to a specific restaurant. All other criteria mentioned in this question were met as well."),
+     (5, "Bonus. Model explanations were clear and thorough. For all the different types of models that they had, they provided clear explanations alongside relevant tables and formulas."),
+     (5, "Literature review was well done. All the information required in this section was met and explained very clearly, especially the other approaches section."),
+     (5, "Bonus. Results and conclusion section was well done. Gave a very good overview of what was accomplished through the work that they completed and also included a future works section.")],
+  "217986121": 
+    [(4, "Sufficient amount of exploratory data analysis, but would have liked to see more explanation of finding."),
+     (5, "All parts of this questions were explained clearly and were met. "),
+     (5, "Thorough explanation of the model that they chose, BPR, and also included information about struggles with the model. "),
+     (5, "Provides explanation of literature that researched and also included information about why these approaches weren't used for this project."),
+     (5, "Provides a good overview of the model they completed, mentioning differences between baseline and model and also explained struggles.")],
+  "217671669": 
+    [(2, "EDA section simply explains provides bullet points of possible information, but no statistics or figures were provided. Essentially missing the exploratory part."),
+     (4, "Has essentially all the information there, but could have been more detailed (ex: what kind of features were used in the baseline). "),
+     (3, "Failed to provide relevant information of the performance of the model as well as mentions some vague information. Information that is provided sounds like it somethings weren't actually tested or tried out, but instead just stated."),
+     (3, "The base information seems to be there, but there is a lot of information what is being written not supported by research or substantial information."),
+     (5, "Provides substantial information to complete all the parts of this question.")],
+  "217929639": 
+    [(5, "All components of this question were met and well explained."),
+     (5, "Clear explanation of the all the components for this question."),
+     (5, "All components of this question were met. Clear tables and and relevant formulas included as well. "),
+     (5, "Related literature is very clear and well cited."),
+     (5, "All the components for the conclusion is well laid out and complete.")]
+}
